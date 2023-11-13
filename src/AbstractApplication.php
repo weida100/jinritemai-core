@@ -22,7 +22,7 @@ abstract class AbstractApplication
     private AccessTokenInterface $accessToken;
     private CacheInterface $cache;
     private HttpClientInterface $httpClient;
-    private int $uid=0;
+    private int|string $shopId=0;
     protected string $cacheNamespace="weida:oceanengine";
 
     public function __construct(array $config)
@@ -127,17 +127,17 @@ abstract class AbstractApplication
     }
 
     /**
-     * @param int $uid
+     * @param int|string $shopId
      * @param string $refreshToken
      * @return AccessTokenInterface
      * @author Weida
      */
-    public function getAccessToken(int $uid,string $refreshToken=''):AccessTokenInterface {
-        if(empty($this->accessToken) || $this->uid != $uid){
+    public function getAccessToken(int|string $shopId,string $refreshToken=''):AccessTokenInterface {
+        if(empty($this->accessToken) || $this->shopId != $shopId){
             $this->accessToken = new AccessToken(
                 $this->getConfig()->get('client_id'),
                 $this->getConfig()->get('client_secret'),
-                $uid,$refreshToken,
+                $shopId,$refreshToken,
                 $this->getCache(),
                 $this->getHttpClient(),
                 $this->getConfig()->get('access_token_callback',null)
