@@ -98,7 +98,7 @@ abstract class AbstractApplication
     public function getHttpClient():HttpClientInterface
     {
         if(empty($this->httpClient)){
-            $this->httpClient =   new HttpClient(['base_uri'=>'https://ad.oceanengine.com/']);
+            $this->httpClient =   new HttpClient(['base_uri'=>'https://openapi-fxg.jinritemai.com/']);
         }
         return $this->httpClient;
     }

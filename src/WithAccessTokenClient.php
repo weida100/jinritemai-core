@@ -72,6 +72,10 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
                 $options['query']= $this->_gerParams($method,$options);
             }
         }
+
+        if(empty($uri)){
+            $uri = '/'.str_replace('.','/',$method);
+        }
         return $this->client->get($uri,$options);
     }
 
@@ -84,6 +88,7 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
      */
     public function post(string|ApiInterface $uri, array $options = []): ResponseInterface
     {
+
         if($uri instanceof ApiInterface){
             $method = $uri->getMethod();
             $options['body'] = json_encode($this->_gerParams($method,$uri->getParams()));
@@ -100,6 +105,9 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
             }
         }
         $options['headers']['Content-Type'] = 'application/json';
+         if(empty($uri)){
+             $uri = '/'.str_replace('.','/',$method);
+         }
         return $this->client->post($uri,$options);
     }
 
@@ -128,6 +136,9 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
             $options['body'] = json_encode($this->_gerParams($method,$postData));
         }
         $options['headers']['Content-Type'] = 'application/json';
+        if(empty($uri)){
+            $uri = '/'.str_replace('.','/',$method);
+        }
         return $this->client->post($uri,$options);
     }
 
