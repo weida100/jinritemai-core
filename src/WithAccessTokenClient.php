@@ -56,7 +56,7 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
     {
         if($uri instanceof ApiInterface){
             $method = $uri->getMethod();
-            $options['query'] = $this->_gerParams($method,$uri->getParams());
+            $arr = $this->_gerParams($method,$uri->getParams());
             $uri = $uri->getUrl();
         }else{
             $method = $uri;
@@ -64,18 +64,18 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
                 if(str_contains($uri,'http')){
                     $method = $options['method']??"";
                 }
-                $options['query']= $this->_gerParams($method,$options);
             }else{
                 if( str_contains($uri,'http')){
                     $method = $options['query']['method']??"";
                 }
-                $options['query']= $this->_gerParams($method,$options);
             }
+            $arr= $this->_gerParams($method,$options);
         }
-
         if(empty($uri)){
             $uri = '/'.str_replace('.','/',$method);
         }
+        $arr['common_params']['param_json'] = $arr['param_json'];
+        $options['query'] =  $arr['common_params'];
         return $this->client->get($uri,$options);
     }
 
@@ -88,10 +88,13 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
      */
     public function post(string|ApiInterface $uri, array $options = []): ResponseInterface
     {
-
         if($uri instanceof ApiInterface){
             $method = $uri->getMethod();
-            $options['body'] = json_encode($this->_gerParams($method,$uri->getParams()));
+            if(isset($options['body'])){
+                $arr = $this->_gerParams($method,$options['body']);
+            }else{
+                $arr = $this->_gerParams($method,$uri->getParams());
+            }
             $uri = $uri->getUrl();
         }else{
             $method = $uri;
@@ -99,15 +102,17 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
                 $method = $options['body']['method']??"";
             }
             if(isset($options['body'])){
-                $options['body'] = json_encode($this->_gerParams($method,$options['body']));
+                $arr = $this->_gerParams($method,$options['body']);
             }else{
-                $options['body'] = json_encode($this->_gerParams($method,$options));
+                $arr = $this->_gerParams($method,$options);
             }
         }
         $options['headers']['Content-Type'] = 'application/json';
-         if(empty($uri)){
-             $uri = '/'.str_replace('.','/',$method);
-         }
+        if(empty($uri)){
+            $uri = '/'.str_replace('.','/',$method);
+        }
+        $options['query']= $arr['common_params'];
+        $options['body']= $arr['param_json'];
         return $this->client->post($uri,$options);
     }
 
@@ -120,26 +125,7 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
      */
     public function postJson(string|ApiInterface $uri, array $postData = []): ResponseInterface
     {
-        if($uri instanceof ApiInterface){
-            $method = $uri->getMethod();
-            if(!empty($postData)){
-                $options['body'] = json_encode($this->_gerParams($method,$postData));
-            }else{
-                $options['body'] = json_encode($this->_gerParams($method,$uri->getParams()));
-            }
-            $uri = $uri->getUrl();
-        }else{
-            $method = $uri;
-            if(str_contains($uri,'http')){
-                $method = $postData['method']??"";
-            }
-            $options['body'] = json_encode($this->_gerParams($method,$postData));
-        }
-        $options['headers']['Content-Type'] = 'application/json';
-        if(empty($uri)){
-            $uri = '/'.str_replace('.','/',$method);
-        }
-        return $this->client->post($uri,$options);
+        return $this->post($uri,['body'=>$postData]);
     }
 
     /**
@@ -159,20 +145,19 @@ class WithAccessTokenClient implements WithAccessTokenClientInterface
         unset($params['method']);
         $_accessParams = $this->accessToken->getParams();
         $comParams['method'] = $method;
-        $comParams["app_key"] = $_accessParams['app_key']??'';
+        $comParams["app_key"] = $_accessParams['client_id']??'';
         $comParams['access_token'] = $this->accessToken->getToken();
-        $comParams['param_json'] = $params;
-        $comParams["timestamp"] = time();
-        $comParams['v']=2;
-        $allPrams = array_merge($comParams, $params);
+        $comParams["timestamp"] = date('Y-m-d H:i:s');
+        $comParams['v']='2';
+        $comParams['sign_method']='hmac-sha256';
+        $apiParams['param_json'] = $params;
+        $allPrams = array_merge($comParams, $apiParams);
         //签名
-        $allPrams["sign"] = Encryptor::sign($allPrams,$_accessParams['secret']);
-        $param_json = $comParams['param_json'];
-        ksort($param_json);
-        $allPrams['param_json'] = json_encode($param_json);
-        return $allPrams;
+        $comParams["sign"] = Encryptor::sign($allPrams,$_accessParams['secret']);
+        return [
+            'common_params'=>$comParams,
+            'param_json'=>json_encode($params)
+        ];
     }
-
-
 
 }
