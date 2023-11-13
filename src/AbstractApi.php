@@ -38,6 +38,7 @@ abstract class AbstractApi implements ApiInterface
         $vars = get_object_vars($this);
         unset($vars['_url']);
         unset($vars['_method']);
+        $vars = array_filter($vars);
         return $vars;
     }
 

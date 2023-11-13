@@ -18,7 +18,7 @@ class AccessToken implements AccessTokenInterface
 {
     private int|string $clientId;
     private string $clientSecret;
-    private int|string $uid;
+    private int|string $shopId;
     private string $refreshToken;
     private string $accessToken='';
     private ?CacheInterface $cache;
@@ -26,8 +26,8 @@ class AccessToken implements AccessTokenInterface
     private $callback;
     private string $cacheKey='';
     public function __construct(
-        int|string $clientId,string $clientSecret,int $shopId, string $refreshToken,
-        ?CacheInterface $cache=null, ?HttpClientInterface $httpClient=null,?callable $callback=null
+        int|string $clientId,string $clientSecret,int|string $shopId, string $refreshToken,
+        ?CacheInterface $cache=null, ?HttpClientInterface $httpClient=null,callable|array|null $callback=null
     )
     {
         $this->clientId = $clientId;
