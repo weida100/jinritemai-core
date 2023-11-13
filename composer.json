@@ -1,0 +1,19 @@
+{
+    "name": "weida/jinritemai-core",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Weida\\JinritemaiCore\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Sgenmi",
+            "email": "sgenmi@gmail.com"
+        }
+    ],
+    "require": {
+        "weida/oauth2-core": "^v0.0.3",
+        "psr/simple-cache": "^3.0"
+    }
+}
