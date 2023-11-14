@@ -11,6 +11,7 @@ namespace Weida\JinritemaiCore;
 
 use RuntimeException;
 use Psr\SimpleCache\CacheInterface;
+use Throwable;
 use Weida\Oauth2Core\Contract\HttpClientInterface;
 use Weida\JinritemaiCore\Contract\AccessTokenInterface;
 
@@ -51,42 +52,46 @@ class AccessToken implements AccessTokenInterface
             }
         }
         $url = "https://openapi-fxg.jinritemai.com/token/refresh";
-
+        $apiParams['param_json'] = [
+            'grant_type'=>'refresh_token',
+            'refresh_token'=>$this->refreshToken,
+        ];
         $params=[
             'method'=>'token.refresh',
             'app_key'=> $this->clientId,
-            'param_json'=>[
-                'grant_type'=>'refresh_token',
-                'refresh_token'=>$this->refreshToken,
-            ],
-            'timestamp'=>time(),
+            'timestamp'=>date("Y-m-d H:i:s"),
             'sign_method'=>'hmac-sha256',
             'v'=>'2'
         ];
-        $params['param_json'] = json_encode($params['param_json']);
-        $params['sign'] = Encryptor::sign($params,$this->clientSecret);
-
+        $params['sign'] = Encryptor::sign(array_merge($params,$apiParams),$this->clientSecret);
         $resp = $this->httpClient->request('POST',$url,[
             'headers'=>[
                 'Content-Type'=>'application/json'
             ],
-            'body'=>json_encode($params)
+            'query'=>$params,
+            'body'=>json_encode($apiParams['param_json'])
         ]);
-
         if($resp->getStatusCode()!=200){
             throw new RuntimeException('Request access_token exception');
         }
         $arr = json_decode($resp->getBody()->getContents(),true);
-
         if (empty($arr['data']['access_token'])) {
             throw new RuntimeException('Failed to get access_token: ' . json_encode($arr, JSON_UNESCAPED_UNICODE));
         }
         //走刷新流程，这里刷新和其他一般的oauth2不太一样。存在同时刷新access_token和refresh_token,
         //如果用于保存refresh_token,这里走回调处理
-        if($this->callback && is_callable($this->callback)){
+        if( $this->callback && (is_callable( $this->callback) || is_array( $this->callback))){
             try {
-                call_user_func($this->callback,$arr['data']);
-            }catch (\Throwable $e){
+                if(is_array( $this->callback)){
+                    $obj =  $this->callback[0];
+                    $action =  $this->callback[1]??'';
+                    if($obj && $action){
+                        ( new $obj())->$action($arr['data']);
+                    }
+                }else{
+                    call_user_func( $this->callback,$arr['data']);
+                }
+            }catch (Throwable $e){
             }
         }
         $this->cache->set($this->getCacheKey(), $arr['data']['access_token'], intval($arr['data']['expires_in'])-1800);
